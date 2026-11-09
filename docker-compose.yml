@@ -10,3 +10,10 @@ services:
       - ./certbot/www:/var/www/certbot:ro        # challenge-filer fra certbot
       - ./certbot/conf:/etc/letsencrypt:ro       # sertifikatene
     restart: unless-stopped
+
+  certbot:
+    image: certbot/certbot
+    volumes:
+      - ./certbot/www:/var/www/certbot           # samme mappe som nginx serverer challenge fra
+      - ./certbot/conf:/etc/letsencrypt          # her lagres sertifikatene
+    command: renew                               # kjøres med: docker compose run --rm certbot ...

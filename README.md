@@ -1,6 +1,6 @@
 # nginx + Let's Encrypt i Docker
 
-nginx kjører i Docker Compose. certbot kjøres som en engangskommando med `docker run` når dere trenger et sertifikat. De deler to mapper:
+nginx og certbot er to tjenester i samme compose-fil. nginx kjører hele tiden; certbot kjøres med `docker compose run` når dere trenger et sertifikat, og avslutter etterpå. De deler to mapper:
 
 - `certbot/www` – certbot skriver valideringsfilen hit, nginx serverer den på `/.well-known/acme-challenge/`
 - `certbot/conf` – certbot lagrer sertifikatene her, nginx leser dem
@@ -26,7 +26,8 @@ nginx-letsencrypt/
 ## Steg 1: Start nginx med bare HTTP
 
 ```bash
-docker compose up -d
+mkdir -p nginx certbot/www certbot/conf
+docker compose up -d nginx
 ```
 
 ## Steg 2: Hent sertifikatet
@@ -34,10 +35,7 @@ docker compose up -d
 Prøv først med `--dry-run`. Den tester mot Let's Encrypts testserver og lagrer ingenting, så dere ikke bruker opp forsøkene.
 
 ```bash
-docker run --rm \
-  -v "$PWD/certbot/www:/var/www/certbot" \
-  -v "$PWD/certbot/conf:/etc/letsencrypt" \
-  certbot/certbot certonly \
+docker compose run --rm certbot certonly \
   --webroot -w /var/www/certbot \
   -d elev.eksempel.no \
   --email elev@eksempel.no --agree-tos --no-eff-email \
@@ -61,10 +59,7 @@ docker compose exec nginx nginx -s reload
 Sertifikatet varer 90 dager. Forny manuelt når det nærmer seg:
 
 ```bash
-docker run --rm \
-  -v "$PWD/certbot/www:/var/www/certbot" \
-  -v "$PWD/certbot/conf:/etc/letsencrypt" \
-  certbot/certbot renew
+docker compose run --rm certbot renew
 docker compose exec nginx nginx -s reload
 ```
 
@@ -74,7 +69,7 @@ Følg nginx-loggen mens certbot kjører: `docker compose logs -f nginx`
 
 | Ser dere | Betyr |
 | --- | --- |
-| `GET /.well-known/acme-challenge/... 404` | certbot og nginx deler ikke `certbot/www` – kjør `docker run` fra samme mappe som compose-filen |
+| `GET /.well-known/acme-challenge/... 404` | certbot og nginx deler ikke `certbot/www` – sjekk volumene i compose-filen |
 | `GET /.well-known/acme-challenge/... 301` | Redirect til HTTPS er på for tidlig – bruk steg 1-konfigen |
 | Ingen forespørsel i loggen | Trafikken når ikke fram – sjekk DNS (A og AAAA), portforward og brannmur |
 | nginx starter ikke etter steg 3 | Feil domenenavn i stien til sertifikatet – sjekk `ls certbot/conf/live/` |
