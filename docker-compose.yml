@@ -1,0 +1,12 @@
+services:
+  nginx:
+    image: nginx:stable
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - /srv/elevside:/usr/share/nginx/html:ro   # nettsiden (det deploy-workflowen skriver til)
+      - ./nginx:/etc/nginx/conf.d:ro             # nginx-konfig (mappe, ikke enkeltfil)
+      - ./certbot/www:/var/www/certbot:ro        # challenge-filer fra certbot
+      - ./certbot/conf:/etc/letsencrypt:ro       # sertifikatene
+    restart: unless-stopped
